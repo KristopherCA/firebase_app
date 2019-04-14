@@ -30,6 +30,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Board board;
   final FirebaseDatabase database = FirebaseDatabase.instance;
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> formKeyAlert = GlobalKey<FormState>();
   DatabaseReference databaseReference;
 
   @override
@@ -40,7 +41,6 @@ class _MyHomePageState extends State<MyHomePage> {
     databaseReference = database.reference().child('Community Board');
     databaseReference.onChildAdded.listen(_onEntryAdded);
     databaseReference.onChildChanged.listen(_onEntryChanged);
-    databaseReference.onChildRemoved.listen(_onEntryChanged);
   }
 
   @override
@@ -109,15 +109,151 @@ class _MyHomePageState extends State<MyHomePage> {
                         Animation<double> animation, int index) {
                       return Card(
                         child: ListTile(
-                          leading: Listener(
-                            key: Key(boardMessages[index].key),
-                            child: Icon(
-                              Icons.remove_circle,
-                              color: Colors.red,
-                            ),
-                            onPointerDown: (pointerEvent) =>
-                                handleUpdate(boardMessages[index].key),
-                          ),
+                          leading: IconButton(
+                              icon: Icon(
+                                Icons.add,
+                                color: Colors.red,
+                              ),
+                              onPressed: () {
+                                showAlertMessage(
+                                    context,
+                                    Container(
+                                      constraints: BoxConstraints(
+                                          maxHeight: 300.0,
+                                          maxWidth: 300.0,
+                                          minWidth: 200.0,
+                                          minHeight: 100.0),
+                                      child: ListView(
+                                        padding: EdgeInsets.all(2.0),
+                                        children: <Widget>[
+                                          Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: <Widget>[
+                                                Flexible(
+                                                    flex: 0,
+                                                    child: Center(
+                                                        child: Form(
+                                                      key: formKeyAlert,
+                                                      child: Flex(
+                                                        direction:
+                                                            Axis.vertical,
+                                                        children: <Widget>[
+                                                          ListTile(
+                                                            leading: Icon(
+                                                              Icons.subject,
+                                                              color:
+                                                                  Colors.black,
+                                                            ),
+                                                            title:
+                                                                TextFormField(
+                                                              initialValue: "",
+                                                              onSaved: (valalert) =>
+                                                                  board.subject =
+                                                                      valalert,
+                                                              validator: (valalert) =>
+                                                                  valalert == ""
+                                                                      ? valalert
+                                                                      : null,
+                                                              decoration:
+                                                                  InputDecoration(
+                                                                      labelText:
+                                                                          'Subject'),
+                                                            ),
+                                                          ),
+                                                          ListTile(
+                                                            leading: Icon(
+                                                              Icons.message,
+                                                              color:
+                                                                  Colors.black,
+                                                            ),
+                                                            title:
+                                                                TextFormField(
+                                                              initialValue: "",
+                                                              onSaved: (valalert) =>
+                                                                  board.body =
+                                                                      valalert,
+                                                              validator: (valalert) =>
+                                                                  valalert == ""
+                                                                      ? valalert
+                                                                      : null,
+                                                              decoration:
+                                                                  InputDecoration(
+                                                                      labelText:
+                                                                          'Body'),
+                                                            ),
+                                                          ),
+                                                          Padding(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                        .only(
+                                                                    top: 20.0,
+                                                                    bottom:
+                                                                        0.0),
+                                                            child: Row(
+                                                              mainAxisAlignment:
+                                                                  MainAxisAlignment
+                                                                      .spaceEvenly,
+                                                              children: <
+                                                                  Widget>[
+                                                                FlatButton(
+                                                                  onPressed:
+                                                                      () {
+                                                                    handleUpdate(
+                                                                        boardMessages[index]
+                                                                            .key);
+                                                                    Navigator.pop(
+                                                                        context);
+                                                                  },
+                                                                  child: Text(
+                                                                    'Update',
+                                                                    style: TextStyle(
+                                                                        color: Colors
+                                                                            .white,
+                                                                        fontWeight:
+                                                                            FontWeight.bold),
+                                                                  ),
+                                                                  color: Colors
+                                                                      .red
+                                                                      .shade800,
+                                                                  shape: RoundedRectangleBorder(
+                                                                      borderRadius:
+                                                                          BorderRadius.circular(
+                                                                              30.0)),
+                                                                ),
+                                                                FlatButton(
+                                                                  onPressed:
+                                                                      () {
+                                                                    Navigator.pop(
+                                                                        context);
+                                                                  },
+                                                                  child: Text(
+                                                                    'Cancel',
+                                                                    style: TextStyle(
+                                                                        color: Colors
+                                                                            .white,
+                                                                        fontWeight:
+                                                                            FontWeight.bold),
+                                                                  ),
+                                                                  color: Colors
+                                                                      .red
+                                                                      .shade800,
+                                                                  shape: RoundedRectangleBorder(
+                                                                      borderRadius:
+                                                                          BorderRadius.circular(
+                                                                              30.0)),
+                                                                )
+                                                              ],
+                                                            ),
+                                                          )
+                                                        ],
+                                                      ),
+                                                    )))
+                                              ]),
+                                        ],
+                                      ),
+                                    ),
+                                    index);
+                              }),
                           trailing: Listener(
                             key: Key(boardMessages[index].key),
                             child: Icon(
@@ -138,6 +274,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _onEntryAdded(Event event) {
     setState(() {
+      //read from firebase
       boardMessages.add(Board.fromSnapshot(event.snapshot));
     });
   }
@@ -147,9 +284,10 @@ class _MyHomePageState extends State<MyHomePage> {
     if (form.validate()) {
       form.save();
       form.reset();
-      FocusScope.of(context).requestFocus(new FocusNode());
+      FocusScope.of(context).requestFocus(FocusNode());
       //save to firebase
       databaseReference.push().set(board.toJson());
+      setState(() {});
     }
   }
 
@@ -163,13 +301,29 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  handleRemove(String key) {
-    databaseReference.child(key).remove();
+  dynamic showAlertMessage<edit>(
+      BuildContext context, Container list, int index) {
+    var edit = AlertDialog(
+      title: Text('Edit'),
+      content: list,
+    );
+    showDialog(context: context, builder: (context) => edit);
   }
 
-  handleUpdate(String key) {
-    databaseReference.child(key).set(board.toJson());
-
+  void handleRemove(String key) {
+    //delete from firebase
+    databaseReference.child(key).remove();
     setState(() {});
+  }
+
+  void handleUpdate(String key) {
+    final FormState form = formKeyAlert.currentState;
+    if (form.validate()) {
+      form.save();
+      form.reset();
+      //update firebase
+      databaseReference.child(key).set(board.toJson());
+      setState(() {});
+    }
   }
 }
